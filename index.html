@@ -6,6 +6,8 @@
     <title>Gestalt: O Jogo dos Princípios</title>
     <!-- Carrega Tailwind CSS para estilização e responsividade -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF para geração de PDF client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Carrega as fontes do Google Fonts: Inter e Zilla Slab -->
     <style>
         /* MUDANÇA: Substituição de Roboto Slab por Zilla Slab na importação */
@@ -97,8 +99,8 @@
             color: var(--color-light);
             cursor: pointer;
             
-            /* Transição para a inversão de cores */
-            transition: background-color 0.15s ease, color 0.15s ease;
+            /* Transição para a inversão de cores e border-color (stroke) */
+            transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
         }
         
         /* Inverte cores no hover */
@@ -124,6 +126,21 @@
             color: var(--color-dark); 
             border: 1px solid var(--color-dark);
             transition: all 0.2s ease;
+        }
+        /* Garante que botões (button) com pdf-button-inverse invertam cores no hover como os links */
+        .button-effect.pdf-button-inverse {
+            background-color: var(--color-light);
+            color: var(--color-dark);
+            border: 1px solid var(--color-dark);
+        }
+        .button-wrapper-3d:hover:not(.cursor-not-allowed) .button-effect.pdf-button-inverse {
+            background-color: var(--color-dark);
+            color: var(--color-light);
+            border-color: var(--color-light); /* stroke de 1px visível no hover */
+        }
+        /* Hover stroke específico para o link 86% */
+        #external-link-button.button-effect.pdf-button-inverse:hover:not(.cursor-not-allowed) {
+            border-color: var(--color-light);
         }
         /* Efeito de hover para o link ativo (quando não tem cursor-not-allowed) */
         a.pdf-button-inverse:hover:not(.cursor-not-allowed) {
@@ -258,7 +275,22 @@
             }
         }
         
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 20px;
+  flex-wrap: wrap;
+}
 
+.input-text {
+  flex-grow: 1;
+  min-width: 200px;
+}
+
+.input-data {
+  width: 220px;
+}
 
 
 
@@ -292,33 +324,37 @@
             
  <div class="linha-divisoria"></div>
 
-    <div class="form-row">
-        <label class="form-label" for="nome">Formando/a:</label>
+<!-- Envolver o formulário na mesma content-area -->
+<div class="content-area">
+  <div class="form-row w-full flex flex-wrap items-center gap-4">
+    <label class="form-label" for="nome">Formando/a:</label>
 
-        <!-- Nome + apelido obrigatório -->
-        <input 
-            class="input-text"
-            type="text"
-            id="nome"
-            name="nome"
-            placeholder="Nome Sobrenome"
-            required
-            pattern="^[A-Za-zÀ-ÿ]+(\\s+[A-Za-zÀ-ÿ]+)+$"
-            title="Por favor introduza o nome e o apelido."
-        >
+    <!-- Nome + apelido obrigatório -->
+    <input 
+      class="input-text flex-grow"
+      type="text"
+      id="nome"
+      name="nome"
+      placeholder="Nome Sobrenome"
+      required
+      pattern="^[A-Za-zÀ-ÿ]+(\\s+[A-Za-zÀ-ÿ]+)+$"
+      title="Por favor introduza o nome e o apelido."
+    >
 
-        <!-- Data — preenchida automaticamente -->
-        <input 
-            class="input-data"
-            type="text"
-            id="data"
-            name="data"
-            placeholder="DD/MM/AAAA HH:MM"
-            readonly
-        >
-    </div>
+    <!-- Data — preenchida automaticamente -->
+    <input 
+      class="input-data"
+      type="text"
+      id="data"
+      name="data"
+      placeholder="DD/MM/AAAA HH:MM"
+      readonly
+    >
+  </div>
+</div>
 
-    <div class="linha-divisoria"></div>
+<div class="linha-divisoria"></div>
+
 
     <script>
         const nomeInput = document.getElementById("nome");
@@ -761,23 +797,36 @@
                         <!-- O texto '0%' é o padrão inicial, atualizado por JS -->
                         <p class="text-xl">Pontuação: <span id="current-score">0%</span></p> 
                         <!-- Limite de 86% para receber o presente -->
-                        <p class="text-sm opacity-80">(Mínimo de 86% necessário para o 1º presente)</p>
+                        <p class="text-sm opacity-80">(Mínimo de 86% necessário para o 1º presente. Atenção se fizer 100% de cotação tem um super presente. <br> Corrija o que errou. Força!)</p>
                         <p id="pass-fail-message" class="mt-4 text-2xl" style="color: #fafafa; min-height: 90px;" data-waiting-style="true">
                             ${initialMessage}
                         </p>
                         
                         <!-- Link 1 (Prémio 86%+ - Link 4ED) - Desativado por defeito -->
-                        <a id="external-link-button" href="#" target="_blank"
-                           class="mt-6 px-8 py-3 rounded-lg pdf-button-inverse inline-block opacity-50 cursor-not-allowed transition duration-150 ease-in-out"
-                           onclick="if(this.classList.contains('cursor-not-allowed')) { event.preventDefault(); console.log('É necessário no mínimo 86% de acertos para receber o presente.'); }">
-                            Receber o meu presente (86%+) →
-                        </a>
+                        <div id="external-link-wrapper" class="mt-6 button-wrapper-3d">
+                            <a id="external-link-button" href="#" target="_blank"
+                               class="px-8 py-3 rounded-lg button-effect pdf-button-inverse inline-block opacity-50 cursor-not-allowed transition duration-150 ease-in-out"
+                               onclick="if(this.classList.contains('cursor-not-allowed')) { event.preventDefault(); console.log('É necessário no mínimo 86% de acertos para receber o presente.'); }">
+                                Receber o meu presente (86%+) →
+                            </a>
+                        </div>
 
                         <!-- Link 2 (Prémio 100% - Vídeo) - Inicialmente ESCONDIDO (opacity-0 + pointer-events-none) -->
-                        <a id="external-link-button-100" href="#" target="_blank"
-                            class="mt-4 px-8 py-3 rounded-lg button-100-percent inline-block opacity-0 pointer-events-none cursor-not-allowed transition duration-150 ease-in-out">
-                             Prémio Especial (100% Acertos) - Ver Vídeo Exclusivo →
-                        </a>
+                        <div id="external-link-wrapper-100" class="mt-4 button-wrapper-3d">
+                            <a id="external-link-button-100" href="#" target="_blank"
+                                class="px-8 py-3 rounded-lg button-100-percent inline-block opacity-0 pointer-events-none cursor-not-allowed transition duration-150 ease-in-out">
+                                 Prémio Especial (100% Acertos) - Ver Vídeo Exclusivo →
+                            </a>
+                        </div>
+
+                        <!-- Botão de Imprimir Relatório (visível sempre) -->
+                        <div id="print-button-wrapper" class="mt-4 button-wrapper-3d">
+                            <button id="print-button" class="px-6 py-2 button-effect pdf-button-inverse" onclick="printReport()" aria-label="Imprimir Relatório">
+                                Imprimir Relatório
+                            </button>
+                        </div>
+                        <!-- Nota obrigatória abaixo do botão de imprimir -->
+                        <p id="print-note" class="mt-2 text-sm font-semibold" style="color:#fafafa;">Obrigatório imprimir relatório e submeter na tarefa em Moodle.</p>
                     </div>
                 `;
                 gameContainer.appendChild(document.createElement('div')).className = 'divider-h';
@@ -799,66 +848,82 @@
                 const messageEl = document.getElementById('pass-fail-message');
                 const linkBtn = document.getElementById('external-link-button'); // Link 86%+
                 const linkBtn100 = document.getElementById('external-link-button-100'); // Link 100%
+                const linkWrapper = document.getElementById('external-link-wrapper');
+                const linkWrapper100 = document.getElementById('external-link-wrapper-100');
                 
-                // Garante que o score % esteja atualizado
-                currentScoreEl.textContent = `${scorePercentage.toFixed(0)}%`;
-                
+                // Garante que o score % esteja atualizado (usar valor arredondado para consistência com o que o utilizador vê)
+                const scorePercentageRounded = Math.round(scorePercentage);
+                currentScoreEl.textContent = `${scorePercentageRounded}%`;
+
                 // --- SETUP INICIAL: DESATIVAÇÃO DE AMBOS OS LINKS ---
-                // Lógica de Desativação do Link 100%
-                linkBtn100.classList.add('opacity-0', 'pointer-events-none', 'cursor-not-allowed');
-                linkBtn100.href = '#';
-                
-                // Lógica de Desativação do Link 86%+
-                linkBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                linkBtn.href = '#';
+                if (linkBtn100) {
+                    linkBtn100.classList.add('opacity-0', 'pointer-events-none', 'cursor-not-allowed');
+                    linkBtn100.href = '#';
+                }
+
+                if (linkBtn) {
+                    linkBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    linkBtn.href = '#';
+                }
+                // ensure wrappers are disabled visually as well
+                if (linkWrapper100) linkWrapper100.classList.add('cursor-not-allowed');
+                if (linkWrapper) linkWrapper.classList.add('cursor-not-allowed');
                 // ----------------------------------------------------
 
-                // Remove o estilo inicial de 'a aguardar' e o spinner
-                if (gestaltData.filter(q => q.answered).length === totalQuestions || scorePercentage >= passThreshold) {
+                 // Remove o estilo inicial de 'a aguardar' e o spinner se já atingiu 86% (arredondado) ou completou todas as questões
+                 const answeredCount = gestaltData.filter(q => q.answered).length;
+                 if (answeredCount === totalQuestions || scorePercentageRounded >= passThreshold) {
                      messageEl.removeAttribute('data-waiting-style');
                      messageEl.innerHTML = ''; 
                      messageEl.style.color = '';
                 }
-                
+
                 // ----------------------------------------------------------------------------------
-                // 1. Lógica para 100% (6/6)
+                // 1. Lógica para 100% (6/6) - exige 100% E TODAS AS QUESTÕES respondidas corretamente
                 // ----------------------------------------------------------------------------------
-                if (scorePercentage === perfectScore) {
-                    
+                if (scorePercentageRounded === perfectScore && answeredCount === totalQuestions) {
                     // Mensagem formatada para 100%
                     messageEl.innerHTML = 'FANTÁSTICO!<br>Atingiu a Pontuação Máxima (100%)!<br>Receba o seu Prémio Especial!';
                     messageEl.classList.add('text-yellow-400', 'font-extrabold'); // Cor amarela
                     messageEl.classList.remove('text-red-400', 'text-green-400');
-                    
+
                     // ATIVA o link 86%+ 
-                    linkBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    linkBtn.href = 'https://4ed.com.br/gestalt/'; 
+                    if (linkBtn) {
+                        linkBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        linkBtn.href = 'https://4ed.com.br/gestalt/'; 
+                    }
+                    if (linkWrapper) linkWrapper.classList.remove('cursor-not-allowed');
 
                     // ATIVA o link 100%
-                    linkBtn100.classList.remove('opacity-0', 'pointer-events-none', 'cursor-not-allowed');
-                    linkBtn100.href = 'https://youtu.be/yPlGJuPQwho?si=-Pj51NSSGtLP2AC5'; 
-                    
+                    if (linkBtn100) {
+                        linkBtn100.classList.remove('opacity-0', 'pointer-events-none', 'cursor-not-allowed');
+                        linkBtn100.href = 'https://youtu.be/yPlGJuPQwho?si=-Pj51NSSGtLP2AC5'; 
+                    }
+                    if (linkWrapper100) linkWrapper100.classList.remove('cursor-not-allowed');
+
                 // ----------------------------------------------------------------------------------
-                // 2. Lógica para 86% a 99% (5/6)
+                // 2. Lógica para 86% a 99% (5/6) - desbloqueia mesmo que o jogo não esteja terminado
                 // ----------------------------------------------------------------------------------
-                } else if (scorePercentage >= passThreshold) {
-                    
+                } else if (scorePercentageRounded >= passThreshold) {
                     // Mensagem formatada para 86%+
-                    messageEl.innerHTML = 'PARABÉNS!<br>Aprovado(a)!<br>Ganhou um presente.';
+                    messageEl.innerHTML = 'PARABÉNS!<br>Aprovado(a)!<br>Ganhou um presente. Para ganhar outro corrija o que errou!';
                     messageEl.classList.add('text-green-400', 'font-extrabold'); // Cor verde
                     messageEl.classList.remove('text-red-400', 'text-yellow-400');
-                    
+
                     // ATIVA o link 86%+
-                    linkBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    linkBtn.href = 'https://4ed.com.br/gestalt/';
-                    
+                    if (linkBtn) {
+                        linkBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        linkBtn.href = 'https://4ed.com.br/gestalt/';
+                    }
+                    if (linkWrapper) linkWrapper.classList.remove('cursor-not-allowed');
+
                 // ----------------------------------------------------------------------------------
                 // 3. Lógica para Reprovado (< 86%)
                 // ----------------------------------------------------------------------------------
                 } else {
                     // Apenas se o jogo estiver COMPLETAMENTE TERMINADO, mostra a mensagem de falha final
-                    if (gestaltData.filter(q => q.answered).length === totalQuestions) {
-                        messageEl.textContent = `Não Aprovado(a). A sua nota (${scorePercentage.toFixed(0)}%) não atingiu os ${passThreshold}% necessários. Reveja os princípios e tente novamente!`;
+                    if (answeredCount === totalQuestions) {
+                        messageEl.textContent = `Não Aprovado(a). A sua nota (${scorePercentageRounded}%) não atingiu os ${passThreshold}% necessários. Reveja os princípios e tente novamente!`;
                         messageEl.classList.add('text-red-400', 'font-extrabold'); // Cor vermelha
                         messageEl.classList.remove('text-green-400', 'text-yellow-400');
                     } else {
@@ -868,6 +933,109 @@
                              messageEl.classList.remove('text-red-400', 'text-green-400');
                          }
                     }
+                }
+            }
+
+            /**
+             * Gera um relatório imprimível com o nome, data, pontuação e o estado de cada princípio.
+             */
+            function printReport() {
+                const nome = document.getElementById('nome') ? document.getElementById('nome').value.trim() : '';
+                const dataVal = document.getElementById('data') ? document.getElementById('data').value.trim() : '';
+                const answeredCount = gestaltData.filter(q => q.answered).length;
+                const scorePercentage = ((answeredCount / totalQuestions) * 100).toFixed(0);
+
+                // Desativa o botão de imprimir para evitar múltiplos cliques (mesmo comportamento dos botões de opção)
+                const printWrapper = document.getElementById('print-button-wrapper');
+                const printBtn = document.getElementById('print-button');
+                if (printWrapper) printWrapper.classList.add('cursor-not-allowed');
+                if (printBtn) printBtn.onclick = null;
+
+                // Gera PDF usando jsPDF (injetado via CDN no head)
+                try {
+                    const { jsPDF } = window.jspdf || {};
+                    if (typeof jsPDF === 'function') {
+                        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+                        const marginLeft = 40;
+                        let cursorY = 40;
+
+                        doc.setFontSize(16);
+                        doc.text('Relatório de Avaliação — Gestalt: O Jogo dos Princípios', marginLeft, cursorY);
+                        cursorY += 24;
+
+                        doc.setFontSize(11);
+                        doc.text(`Formando/a: ${nome || '—'}`, marginLeft, cursorY);
+                        cursorY += 16;
+                        doc.text(`Data: ${dataVal || '—'}`, marginLeft, cursorY);
+                        cursorY += 16;
+                        doc.text(`Pontuação: ${scorePercentage}% (${answeredCount}/${totalQuestions})`, marginLeft, cursorY);
+                        cursorY += 20;
+
+                        doc.setFontSize(12);
+                        doc.text('Detalhes por princípio:', marginLeft, cursorY);
+                        cursorY += 14;
+
+                        doc.setFontSize(10);
+                        gestaltData.forEach((q, i) => {
+                            const status = q.answered ? 'Correto' : 'Não marcado / Incorreto';
+                            const line = `${i + 1}. ${q.principio} — ${status}`;
+                            // quebra de página se necessário
+                            if (cursorY > 760) {
+                                doc.addPage();
+                                cursorY = 40;
+                            }
+                            doc.text(line, marginLeft, cursorY);
+                            cursorY += 12;
+                        });
+
+                        doc.setFontSize(9);
+                        doc.text(`Gerado em: ${new Date().toLocaleString()}`, marginLeft, cursorY + 18);
+
+                        // Nome do ficheiro seguro
+                        const safeName = (nome || 'sem_nome').replace(/[^a-z0-9_\-]/gi, '_');
+                        doc.save(`Relatorio_Gestalt_${safeName}.pdf`);
+                    } else {
+                        // Se jsPDF não estiver disponível, cair em fallback: criar janela com conteúdo imprimível
+                        const detailsHtml = gestaltData.map((q,i) => {
+                            const status = q.answered ? 'Correto' : 'Não marcado / Incorreto';
+                            return `<tr><td style="padding:6px 8px;border:1px solid #ccc">${i+1}. ${q.principio}</td><td style="padding:6px 8px;border:1px solid #ccc">${status}</td></tr>`;
+                        }).join('');
+                        const printWindow = window.open('', '_blank', 'width=800,height=900');
+                        const docHtml = `
+                            <html>
+                            <head>
+                                <title>Relatório de Avaliação - Gestalt</title>
+                                <style>
+                                    body{font-family:Inter, Arial, sans-serif; padding:20px; color:#111}
+                                    h1{font-size:20px;margin-bottom:8px}
+                                    table{border-collapse:collapse;width:100%;margin-top:12px}
+                                    @media print{ button{display:none} }
+                                </style>
+                            </head>
+                            <body>
+                                <h1>Relatório de Avaliação — Gestalt: O Jogo dos Princípios</h1>
+                                <p><strong>Formando/a:</strong> ${nome || '—'}</p>
+                                <p><strong>Data:</strong> ${dataVal || '—'}</p>
+                                <p><strong>Pontuação:</strong> ${scorePercentage}% (${answeredCount}/${totalQuestions})</p>
+                                <table>
+                                    <thead>
+                                        <tr><th style="text-align:left;padding:6px 8px;border:1px solid #ccc">Princípio</th><th style="text-align:left;padding:6px 8px;border:1px solid #ccc">Estado</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        ${detailsHtml}
+                                    </tbody>
+                                </table>
+                                <p style="margin-top:18px; font-size:12px; color:#555">Gerado em: ${new Date().toLocaleString()}</p>
+                                <button onclick="window.print()" style="margin-top:12px;padding:8px 12px">Imprimir</button>
+                            </body>
+                            </html>
+                        `;
+                        printWindow.document.open();
+                        printWindow.document.write(docHtml);
+                        printWindow.document.close();
+                    }
+                } catch (err) {
+                    console.error('Erro ao gerar PDF:', err);
                 }
             }
 
